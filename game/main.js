@@ -131,14 +131,17 @@ function CheckAABB(ax,ay,aw,ah,bx,by,bw,bh)
     return (ax+aw > bx && ax < bx+bw && ay+ah>by && ay<by+bh);
 }
 
+const NEXT_BONUS_LIFE = 500;
+
 let gGame = {
     curGameState: GAME_STATE.TITLE,
     curLevel: 0,
     score: 0,
     lives: 3,
     ballCount: 0,
-    destroyedBricks: 0
-}
+    destroyedBricks: 0,
+    toNextBonusLife: NEXT_BONUS_LIFE
+};
 
 let paddle = {
     x: (canvas.width-30)/2,
@@ -151,8 +154,11 @@ let scrollDisplay = {
     text: "",
     timer: 0,
     phase: 0,
-    yPos: -20
+    yPos: -20,
+    isActive: false
 };
+
+let timer = 0;
 
 let maxBrickCols = 10;
 let maxBrickRows = 4;
@@ -166,6 +172,14 @@ let maxLevels = 0;
 const levels = []
 
 //level 1
+levels[maxLevels++] = [
+    0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,1,1,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,
+  
+];
+
 levels[maxLevels++] = [
     0,0,0,0,0,0,0,0,0,0,
     0,0,1,1,1,1,1,0,0,0,
@@ -297,7 +311,7 @@ function CheckCollisions()
                 if(--b.health<=0)
                 {
                     b.isAlive=false;
-                    gGame.score += b.value;
+                    GetScore(b.value);
                     gGame.destroyedBricks++;
                 }
 
@@ -336,9 +350,8 @@ function CheckCollisions()
             
         if(ball.y>canvas.height)
         {
-            //TODO: just remove the ball and check if the ball count is 0
+            //TODO: need to remove the ball from the array as well
             gGame.ballCount--;
-            Die();
         }
             
 
@@ -390,7 +403,30 @@ function NewGame()
     gGame.curLevel = 0;
     gGame.score = 0;
     gGame.lives = 3;
+    gGame.toNextBonusLife = NEXT_BONUS_LIFE;
     StartLevel();
+}
+
+function GetScore(amount)
+{
+    gGame.score += amount;
+    if(gGame.score >= gGame.toNextBonusLife)
+    {
+        gGame.lives++;
+        gGame.toNextBonusLife += gGame.toNextBonusLife*2;
+    }
+}
+
+function ResetLevel()
+{
+    paddle.x = (canvas.width-30)/2;
+    paddle.y = canvas.height-15;
+
+    gGame.ballCount = 0;
+    NewBall(paddle.x,paddle.y);
+
+    SetScrollDisplay(`Level: ${gGame.curLevel+1}`);
+
 }
 
 function StartLevel()
@@ -400,16 +436,16 @@ function StartLevel()
     GenerateBricks(levels[gGame.curLevel]);
     console.log("Bricks generated " + brickCount);
     
-    paddle.x = (canvas.width-30)/2;
-    paddle.y = canvas.height-15;
+    ResetLevel();
+}
 
-    gGame.ballCount = 0;
-    NewBall(paddle.x,paddle.y);
+function ToNextLevel()
+{
+     gGame.curLevel++;
+        if(gGame.curLevel>=maxLevels)
+            gGame.curLevel=0;
 
-    scrollDisplay.text = `Level: ${gGame.curLevel+1}`;
-    scrollDisplay.yPos = -20;
-    scrollDisplay.phase=0;
-    
+    StartLevel();
 }
 
 function Die()
@@ -420,9 +456,16 @@ function Die()
         return;
     }
 
-    paddle.x = (canvas.width-30)/2;
-    paddle.y = canvas.height-15;
-    NewBall(paddle.x,paddle.y);
+    ResetLevel();
+}
+
+function SetScrollDisplay(text)
+{
+    scrollDisplay.text = text;
+    scrollDisplay.yPos = -20;
+    scrollDisplay.phase = 0;
+    scrollDisplay.timer = 0;
+    scrollDisplay.isActive = true;
 }
 
 function UpdateScrollDisplay()
@@ -433,32 +476,41 @@ function UpdateScrollDisplay()
         if(scrollDisplay.phase==0 && scrollDisplay.yPos>canvas.height*0.5)
         {
             scrollDisplay.timer += 60;
-            scrollDisplay.phase = 1;
+            scrollDisplay.phase++;
         }
         else if(scrollDisplay.phase==1 && scrollDisplay.yPos>canvas.height)
         {
-            scrollDisplay.phase = 2; //finished
+            scrollDisplay.phase++; //finished
+            scrollDisplay.isActive = false;
+            if(gGame.destroyedBricks >= brickCount)
+                ToNextLevel();
+            
         }
     }
     else
     {
         scrollDisplay.timer--;
     }
-    //RENDER
-    DrawBricks();
-    DrawRectangle(paddle.x,paddle.y,paddle.w,paddle.h,"#FFFF00");
-    DrawLineRectangle(paddle.x,paddle.y,paddle.w,paddle.h,"#000000",2);
-    DrawBalls();
-    DrawHud();
 
-    ctx.font = "16px Arial";
-    ctx.fillStyle = "#0095DD";
-    ctx.fillText(scrollDisplay.text,canvas.width*0.5,scrollDisplay.yPos);    
+    
 }
 
 function UpdatePlay()
 {
-    if(scrollDisplay.phase < 2)
+    if(timer>0)
+    {
+        if(--timer<=0)
+        {
+            if(gGame.ballCount<=0)
+            {
+                Die();
+            }
+            
+        }
+        return;
+    }
+
+    if(scrollDisplay.isActive)
     {
         UpdateScrollDisplay();
         return;
@@ -507,18 +559,33 @@ function UpdatePlay()
 
     if(gGame.destroyedBricks >= brickCount)
     {
-        gGame.curLevel++;
-        if(gGame.curLevel>=maxLevels)
-            gGame.curLevel=0;
-        StartLevel();
+        SetScrollDisplay("GOOD JOB!!");
     }
 
+    if(gGame.ballCount<=0)
+    {
+        timer = 30;
+    }
+
+    
+}
+
+function DrawPlay()
+{
     //RENDER
     DrawBricks();
     DrawRectangle(paddle.x,paddle.y,paddle.w,paddle.h,"#FFFF00");
     DrawLineRectangle(paddle.x,paddle.y,paddle.w,paddle.h,"#000000",2);
     DrawBalls();
     DrawHud();
+
+    if(scrollDisplay.isActive)
+    {
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#0095DD";
+        ctx.fillText(scrollDisplay.text,canvas.width*0.5,scrollDisplay.yPos);    
+    }
+    
 }
 
 function UpdateGameOver()
@@ -570,6 +637,7 @@ function draw()
     else if(gGame.curGameState===GAME_STATE.PLAY)
     {
         UpdatePlay();
+        DrawPlay();
     }
     else if(gGame.curGameState===GAME_STATE.GAME_OVER)
     {

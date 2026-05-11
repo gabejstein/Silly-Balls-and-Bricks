@@ -5,6 +5,7 @@ const GAME_STATE = {
     TITLE: 0,
     PLAY: 1,
     GAME_OVER: 2,
+    SCORE_BOARD: 3
 };
 
 Object.freeze(GAME_STATE); //makes immutable
@@ -131,7 +132,10 @@ function CheckAABB(ax,ay,aw,ah,bx,by,bw,bh)
     return (ax+aw > bx && ax < bx+bw && ay+ah>by && ay<by+bh);
 }
 
-const NEXT_BONUS_LIFE = 500;
+function GetRandomInt(min,max)
+{
+    return min + (Math.floor(Math.random()*(max-min)));
+}
 
 let gGame = {
     curGameState: GAME_STATE.TITLE,
@@ -140,7 +144,7 @@ let gGame = {
     lives: 3,
     ballCount: 0,
     destroyedBricks: 0,
-    toNextBonusLife: NEXT_BONUS_LIFE
+    toNextBonusLife: 0
 };
 
 let paddle = {
@@ -167,6 +171,8 @@ const brickHeight = 16;
 const brickPadding = 5;
 const screenOffsetX = 20;
 const screenOffsetY = 10;
+
+const NEXT_BONUS_LIFE = 500;
 
 let maxLevels = 0;
 const levels = []
@@ -259,6 +265,7 @@ function DrawBricks()
         let b = bricks[i];
         if(!b.isAlive)continue;
         DrawRectangle(b.x,b.y,brickWidth,brickHeight,b.color);
+        DrawLineRectangle(b.x,b.y,brickWidth,brickHeight,"#000000",1);
     }
 }
 
@@ -491,7 +498,6 @@ function UpdateScrollDisplay()
     {
         scrollDisplay.timer--;
     }
-
     
 }
 
@@ -623,7 +629,7 @@ function UpdateTitle()
 
     ctx.font = "16px Arial";
     ctx.fillStyle = "#0095DD";
-    ctx.fillText("BALLS TO THE WALLS",canvas.width/2-70,canvas.height/2);
+    ctx.fillText("SILLY BALLS AND BRICKS",canvas.width/2-70,canvas.height/2);
     
 }
 
@@ -645,6 +651,7 @@ function draw()
     }
     
     requestAnimationFrame(draw);
+
 }
 
 draw();

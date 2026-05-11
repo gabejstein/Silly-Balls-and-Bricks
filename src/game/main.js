@@ -215,6 +215,31 @@ let brickCount = 0;
 let bricks = [];
 
 let balls = []; //might have multiple balls
+let ballSpeedScale = 1;
+
+const POWERUP_TYPE = {
+    SLOW_BALL: 0,
+    FAST_BALL: 1,
+    PENETRATION: 2,
+    MULTI_BALL: 3,
+};
+
+Object.freeze(POWERUP_TYPE);
+
+const powerupSpeed = 10;
+let powerupCount = 0;
+
+function NewPowerup(x,y,type)
+{
+    return {
+        x:x,
+        y:y,
+        w:10,
+        h:10,
+        color: "#e17c18", //Replace with texture later.
+        type: type
+    };
+}
 
 //take data from array and generate all bricks in level
 function GenerateBricks(data)
@@ -312,6 +337,9 @@ function CheckCollisions()
         
         for(let j=0;j<gGame.ballCount;j++)
         {
+            //NOTE: This causes an error because each ball is checked against a brick
+            //even if one ball already destroyed the brick.
+            //Need to move the brick loop to inside the ball loop instead.
             let ball = balls[j];
             if(CheckAABB(ball.x,ball.y,ball.radius,ball.radius,b.x,b.y,brickWidth,brickHeight))
             {
@@ -334,7 +362,7 @@ function CheckCollisions()
         let ball = balls[i];
         if(CheckAABB(ball.x,ball.y,ball.radius,ball.radius,paddle.x,paddle.y,paddle.w,paddle.h))
         {
-
+            BallBounce(ball,paddle.x,paddle.y,paddle.w,paddle.h);
         }
 
         if(ball.x < 0)
@@ -357,8 +385,7 @@ function CheckCollisions()
             
         if(ball.y>canvas.height)
         {
-            //TODO: need to remove the ball from the array as well
-            gGame.ballCount--;
+            RemoveBall(i);
         }
             
 
@@ -379,7 +406,13 @@ function NewBall(x,y)
 
 function RemoveBall(index)
 {
+    //let ball = balls[index];
+    if(index<gGame.ballCount-1)
+    {
+        balls[index] = balls[gGame.ballCount-1];
+    }
 
+    gGame.ballCount--;
 }
 
 function DrawBalls()
@@ -424,13 +457,41 @@ function GetScore(amount)
     }
 }
 
+function GetPowerup(powerupType)
+{
+    console.log("Got powerup: "+powerupType);
+    switch(powerupType)
+    {
+        case POWERUP_TYPE.SLOW_BALL: //slow ball
+            ballSpeedScale = 0.5;
+            break;
+        case POWERUP_TYPE.FAST_BALL: //fast ball
+            ballSpeedScale = 1.5;
+            break;
+        case POWERUP_TYPE.PENETRATION:
+            break;
+        case POWERUP_TYPE.MULTI_BALL:
+            for(let i=0;i<2;i++)
+            {
+                NewBall(balls[0].x+5*(i+1),balls[0].y+3*(i+1));
+                balls[gGame.ballCount-1].launched = true;
+                balls[gGame.ballCount-1].dx = balls[0].dx;
+                balls[gGame.ballCount-1].dy = balls[0].dy;
+            }
+            break;
+    }
+}
+
 function ResetLevel()
 {
     paddle.x = (canvas.width-30)/2;
     paddle.y = canvas.height-15;
 
     gGame.ballCount = 0;
-    NewBall(paddle.x,paddle.y);
+    ballSpeedScale = 1;
+    NewBall(paddle.x+10,paddle.y);
+
+    balls[0].y -= balls[0].radius;
 
     SetScrollDisplay(`Level: ${gGame.curLevel+1}`);
 
@@ -448,9 +509,8 @@ function StartLevel()
 
 function ToNextLevel()
 {
-     gGame.curLevel++;
-        if(gGame.curLevel>=maxLevels)
-            gGame.curLevel=0;
+
+    gGame.curLevel = (gGame.curLevel+1)%maxLevels;
 
     StartLevel();
 }
@@ -532,14 +592,22 @@ function UpdatePlay()
         paddle.x = Math.max(paddle.x - speed,0);
     }
 
+    //Powerup test
+    if(inputStates.enter)
+    {
+        GetPowerup(POWERUP_TYPE.MULTI_BALL);
+        inputStates.enter=false;
+    }
+   
+
     //UPDATE
     for(let i=0;i<gGame.ballCount;i++)
     {
         let b = balls[i];
         if(!b.launched)
         {
-            b.x = paddle.x;
-            b.y = paddle.y;
+            b.x = paddle.x+10;
+            b.y = paddle.y-b.radius;
             if(inputStates.space)
             {
                 console.log("Ball launched!");
@@ -551,12 +619,8 @@ function UpdatePlay()
         }
         else
         {
-            if(CheckAABB(b.x,b.y,b.radius,b.radius,paddle.x,paddle.y,paddle.w,paddle.h))
-            {
-                BallBounce(b,paddle.x,paddle.y,paddle.w,paddle.h);
-            }
-            b.x += b.dx;
-            b.y += b.dy;
+            b.x += b.dx * ballSpeedScale;
+            b.y += b.dy * ballSpeedScale;
         }
 
     }

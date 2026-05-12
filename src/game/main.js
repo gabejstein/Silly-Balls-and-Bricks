@@ -216,6 +216,7 @@ let bricks = [];
 
 let balls = []; //might have multiple balls
 let ballSpeedScale = 1;
+let ballPenetration = false;
 
 const POWERUP_TYPE = {
     SLOW_BALL: 0,
@@ -344,21 +345,27 @@ function BallBounce(ball,x,y,w,h)
 
 function CheckCollisions()
 {
-    //brick collisions
-    for(let i=0;i<brickCount;i++)
+    
+    //Ball Collisions
+    for(let i=0;i<gGame.ballCount;i++)
     {
-        let b = bricks[i];
-        if(!b.isAlive)continue;
-        
-        for(let j=0;j<gGame.ballCount;j++)
+
+        let ball = balls[i];
+
+        //brick collisions
+        for(let i=0;i<brickCount;i++)
         {
-            //NOTE: This causes an error because each ball is checked against a brick
-            //even if one ball already destroyed the brick.
-            //Need to move the brick loop to inside the ball loop instead.
-            let ball = balls[j];
+            let b = bricks[i];
+            if(!b.isAlive)continue;
+            
             if(CheckAABB(ball.x,ball.y,ball.radius,ball.radius,b.x,b.y,brickWidth,brickHeight))
             {
-                if(--b.health<=0)
+                if(ballPenetration)
+                    b.health -=10;
+                else
+                    b.health--;
+                
+                if(b.health<=0)
                 {
                     b.isAlive=false;
                     GetScore(b.value);
@@ -368,20 +375,17 @@ function CheckCollisions()
                     if(roll > 3)
                     {
                         roll = GetRandomInt(0,POWERUP_TYPE.MAX_POWERUP_TYPE);
-                        NewPowerup(b.x,b.y,roll);
+                        NewPowerup(b.x+brickWidth*0.5,b.y+brickHeight*0.5,roll);
                     }
                 }
 
                 //handle ball bounce
-                BallBounce(ball,b.x,b.y,brickWidth,brickHeight);
+                if(ballPenetration==false)
+                    BallBounce(ball,b.x,b.y,brickWidth,brickHeight);
             }
+            
         }
-    }
 
-    //Paddle-ball collisions, ball to ground collisions
-    for(let i=0;i<gGame.ballCount;i++)
-    {
-        let ball = balls[i];
         if(CheckAABB(ball.x,ball.y,ball.radius,ball.radius,paddle.x,paddle.y,paddle.w,paddle.h))
         {
             BallBounce(ball,paddle.x,paddle.y,paddle.w,paddle.h);
@@ -408,6 +412,7 @@ function CheckCollisions()
         if(ball.y>canvas.height)
         {
             RemoveBall(i);
+            i--;
         }
             
 
@@ -491,6 +496,8 @@ function GetPowerup(powerupType)
             ballSpeedScale = 1.5;
             break;
         case POWERUP_TYPE.PENETRATION:
+            ballPenetration = true;
+            console.log("Got ball penetration");
             break;
         case POWERUP_TYPE.MULTI_BALL:
             for(let i=0;i<2;i++)
@@ -523,11 +530,14 @@ function ResetLevel()
 
     gGame.ballCount = 0;
     ballSpeedScale = 1;
+    ballPenetration = false;
     NewBall(paddle.x+10,paddle.y);
 
     balls[0].y -= balls[0].radius;
 
     SetScrollDisplay(`Level: ${gGame.curLevel+1}`);
+
+    powerupCount=0;
 
 }
 
@@ -627,7 +637,7 @@ function UpdatePlay()
     //Powerup test
     if(inputStates.enter)
     {
-        GetPowerup(POWERUP_TYPE.MULTI_BALL);
+        GetPowerup(POWERUP_TYPE.PENETRATION);
         inputStates.enter=false;
     }
    

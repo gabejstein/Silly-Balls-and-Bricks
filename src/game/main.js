@@ -180,8 +180,8 @@ const levels = []
 //level 1
 levels[maxLevels++] = [
     0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,1,1,0,0,0,0,
+    0,0,1,1,1,1,1,1,0,0,
+    0,0,0,1,1,1,1,0,0,0,
     0,0,0,0,0,0,0,0,0,0,
   
 ];
@@ -222,16 +222,20 @@ const POWERUP_TYPE = {
     FAST_BALL: 1,
     PENETRATION: 2,
     MULTI_BALL: 3,
+    BONUS_LIFE: 4,
+    BONUS_POINTS: 5,
+    MAX_POWERUP_TYPE: 6
 };
 
 Object.freeze(POWERUP_TYPE);
 
-const powerupSpeed = 10;
+const powerupSpeed = 4;
 let powerupCount = 0;
+let powerups = [];
 
 function NewPowerup(x,y,type)
 {
-    return {
+    powerups[powerupCount++] = {
         x:x,
         y:y,
         w:10,
@@ -239,6 +243,17 @@ function NewPowerup(x,y,type)
         color: "#e17c18", //Replace with texture later.
         type: type
     };
+}
+
+function RemovePowerup(index)
+{
+    //let ball = balls[index];
+    if(index<powerupCount-1)
+    {
+        powerups[index] = powerups[powerupCount-1];
+    }
+
+    powerupCount--;
 }
 
 //take data from array and generate all bricks in level
@@ -348,6 +363,13 @@ function CheckCollisions()
                     b.isAlive=false;
                     GetScore(b.value);
                     gGame.destroyedBricks++;
+
+                    let roll = GetRandomInt(0,10);
+                    if(roll > 3)
+                    {
+                        roll = GetRandomInt(0,POWERUP_TYPE.MAX_POWERUP_TYPE);
+                        NewPowerup(b.x,b.y,roll);
+                    }
                 }
 
                 //handle ball bounce
@@ -479,7 +501,19 @@ function GetPowerup(powerupType)
                 balls[gGame.ballCount-1].dy = balls[0].dy;
             }
             break;
+        case POWERUP_TYPE.BONUS_LIFE:
+            gGame.lives++;
+            break;
+        case POWERUP_TYPE.BONUS_POINTS:
+            GetScore(200);
+            break;
     }
+}
+
+function DrawPowerups()
+{
+    for(let i=0;i<powerupCount;i++)
+        DrawRectangle(powerups[i].x,powerups[i].y,powerups[i].w,powerups[i].h,powerups[i].color);
 }
 
 function ResetLevel()
@@ -509,9 +543,7 @@ function StartLevel()
 
 function ToNextLevel()
 {
-
     gGame.curLevel = (gGame.curLevel+1)%maxLevels;
-
     StartLevel();
 }
 
@@ -625,6 +657,25 @@ function UpdatePlay()
 
     }
 
+    for(let i=0;i<powerupCount;i++)
+    {
+        let p = powerups[i];
+        p.y += powerupSpeed;
+
+        if(CheckAABB(p.x,p.y,p.w,p.h,paddle.x,paddle.y,paddle.w,paddle.h))
+        {
+            GetPowerup(p.type);
+            RemovePowerup(i);
+            i--; //if removed, need to go back one
+        }
+
+        if(p.y > canvas.height)
+        {
+            RemovePowerup(i);
+            i--;
+        }
+    }
+
     CheckCollisions();
 
     if(gGame.destroyedBricks >= brickCount)
@@ -643,6 +694,7 @@ function UpdatePlay()
 function DrawPlay()
 {
     //RENDER
+    DrawPowerups();
     DrawBricks();
     DrawRectangle(paddle.x,paddle.y,paddle.w,paddle.h,"#FFFF00");
     DrawLineRectangle(paddle.x,paddle.y,paddle.w,paddle.h,"#000000",2);

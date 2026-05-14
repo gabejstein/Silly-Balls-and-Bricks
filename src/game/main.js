@@ -168,7 +168,7 @@ let maxBrickCols = 10;
 let maxBrickRows = 4;
 const brickWidth = 32;
 const brickHeight = 16;
-const brickPadding = 5;
+const brickPadding = 0;
 const screenOffsetX = 16;
 const screenOffsetY = 16;
 
@@ -179,17 +179,17 @@ const levels = []
 
 //level 1
 levels[maxLevels++] = [
-    0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,3,3,0,0,0,0,
     0,0,1,1,1,1,1,1,0,0,
-    0,0,0,1,1,1,1,0,0,0,
+    0,0,3,1,1,1,1,3,0,0,
     0,0,0,0,0,0,0,0,0,0,
   
 ];
 
 levels[maxLevels++] = [
-    0,0,0,0,0,0,0,0,0,0,
-    0,0,1,1,1,1,1,0,0,0,
-    0,0,1,1,1,1,1,0,0,0,
+    0,0,2,2,2,2,2,2,0,0,
+    0,0,1,1,1,1,1,1,0,0,
+    0,0,1,1,3,3,1,1,0,0,
     0,0,0,0,0,0,0,0,0,0,
   
 ];
@@ -273,7 +273,7 @@ function GenerateBricks(data)
             let sx = c*(brickWidth+brickPadding)+screenOffsetX;
             let sy = r*(brickHeight+brickPadding)+screenOffsetY;
 
-            if(brickType==1)
+            if(brickType===1)
             {
                 bricks[brickCount++] = {
                 x: sx,
@@ -282,20 +282,36 @@ function GenerateBricks(data)
                 health: 1,
                 isAlive: 1,
                 brickType: brickType,
-                value: 10
+                value: 10,
+                type: brickType
                 }
             }
-            else if(brickType==2)
+            else if(brickType===2)
             {
                 bricks[brickCount++] = {
                 x: sx,
                 y: sy,
                 color: "#eca115",
-                health: 3,
+                health: 2,
                 isAlive: 1,
                 brickType: brickType,
-                value: 20
+                value: 20,
+                type: brickType
                 }
+            }
+            else if(brickType===3) //indestructable brick
+            {
+                bricks[brickCount++] = {
+                x: sx,
+                y: sy,
+                color: "#3b362b",
+                health: 1,
+                isAlive: 1,
+                brickType: brickType,
+                value: 0,
+                type: brickType
+                }
+                gGame.destroyedBricks++; //to compensate for the indestructability.
             }
             
         }
@@ -354,6 +370,12 @@ function CheckCollisions()
             
             if(CheckAABB(ball.x,ball.y,ball.radius,ball.radius,b.x,b.y,brickWidth,brickHeight))
             {
+                if(b.type===3) //indestructable type
+                {
+                    BallBounce(ball,b.x,b.y,brickWidth,brickHeight);
+                    continue;
+                }
+
                 if(ballPenetration)
                     b.health -=10;
                 else
@@ -374,7 +396,7 @@ function CheckCollisions()
                 }
 
                 //handle ball bounce
-                if(ballPenetration==false)
+                if(ballPenetration===false)
                     BallBounce(ball,b.x,b.y,brickWidth,brickHeight);
             }
             
@@ -600,15 +622,15 @@ function SetScrollDisplay(text)
 
 function UpdateScrollDisplay()
 {
-    if(scrollDisplay.timer==0)
+    if(scrollDisplay.timer===0)
     {
         scrollDisplay.yPos+=5;
-        if(scrollDisplay.phase==0 && scrollDisplay.yPos>canvas.height*0.5)
+        if(scrollDisplay.phase===0 && scrollDisplay.yPos>canvas.height*0.5)
         {
             scrollDisplay.timer += 60;
             scrollDisplay.phase++;
         }
-        else if(scrollDisplay.phase==1 && scrollDisplay.yPos>canvas.height)
+        else if(scrollDisplay.phase===1 && scrollDisplay.yPos>canvas.height)
         {
             scrollDisplay.phase++; //finished
             scrollDisplay.isActive = false;
@@ -726,8 +748,8 @@ function DrawPlay()
     if(scrollDisplay.isActive)
     {
         ctx.font = "16px Arial";
-        ctx.fillStyle = "#0095DD";
-        ctx.fillText(scrollDisplay.text,canvas.width*0.5,scrollDisplay.yPos);    
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillText(scrollDisplay.text,canvas.width*0.5-50,scrollDisplay.yPos);    
     }
     
 }
@@ -767,7 +789,7 @@ function UpdateTitle()
 
     ctx.font = "16px Arial";
     ctx.fillStyle = "#0095DD";
-    ctx.fillText("SILLY BALLS AND BRICKS",canvas.width/2-70,canvas.height/2);
+    ctx.fillText("SILLY BALLS AND BRICKS",canvas.width/2-90,canvas.height/2);
     
 }
 
@@ -786,6 +808,10 @@ function draw()
     else if(gGame.curGameState===GAME_STATE.GAME_OVER)
     {
         UpdateGameOver();
+    }
+    else if(gGame.curGameState===GAME_STATE.SCORE_BOARD)
+    {
+
     }
     
     requestAnimationFrame(draw);

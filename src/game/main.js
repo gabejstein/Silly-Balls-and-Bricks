@@ -149,9 +149,9 @@ let gGame = {
 
 let paddle = {
     x: (canvas.width-30)/2,
-    y: canvas.height-15,
-    w: 50,
-    h: 30
+    y: canvas.height-32,
+    w: 64,
+    h: 16
 };
 
 let scrollDisplay = {
@@ -169,8 +169,8 @@ let maxBrickRows = 4;
 const brickWidth = 32;
 const brickHeight = 16;
 const brickPadding = 5;
-const screenOffsetX = 20;
-const screenOffsetY = 10;
+const screenOffsetX = 16;
+const screenOffsetY = 16;
 
 const NEXT_BONUS_LIFE = 500;
 
@@ -233,6 +233,10 @@ Object.freeze(POWERUP_TYPE);
 const powerupSpeed = 4;
 let powerupCount = 0;
 let powerups = [];
+
+const wallLeft = 16;
+const wallTop = 16;
+const wallRight = 336;
 
 function NewPowerup(x,y,type)
 {
@@ -312,35 +316,25 @@ function DrawBricks()
 
 function BallBounce(ball,x,y,w,h)
 {
-    let normal = {
-        x:0,
-        y:0
-    };
-
-    let xOverlap = (ball.x+ball.radius>x+w)? x+w-ball.x : x-ball.x+ball.radius;
-    let yOverlap = (ball.y+ball.radius>y+h)? y+h-ball.y : y-ball.y+ball.radius;
-    xOverlap = Math.abs(xOverlap);
-    yOverlap = Math.abs(yOverlap);
-
-    if (xOverlap < yOverlap)
+    if(ball.x+2 < x && ball.dx>0)
     {
-        if(ball.x>x)
-            normal.x = -1;
-        else
-            normal.x = 1;
-    }
-    else
+        ball.dx = -ball.dx;
+        ball.x = x-ball.radius;
+    }else if(ball.x+ball.radius+2 > x+w && ball.dx<0)
     {
-         if(ball.y>y)
-            normal.y = 1;
-        else
-            normal.y = -1;
+        ball.dx = -ball.dx;
+        ball.x = x+w;
     }
 
-    let dot = ball.dx*normal.x + ball.dy*normal.y;
-
-    ball.dx = ball.dx - (2.0*normal.x)*dot;
-    ball.dy = ball.dy - (2.0*normal.y)*dot;
+    if(ball.y+2 < y && ball.dy>0)
+    {
+        ball.dy = -ball.dy;
+        ball.y = y-ball.radius;
+    }else if(ball.y+ball.radius+2 > y+h && ball.dy<0)
+    {
+        ball.dy = -ball.dy;
+        ball.y = y+h;
+    }
 }
 
 function CheckCollisions()
@@ -386,26 +380,28 @@ function CheckCollisions()
             
         }
 
+        //paddle
         if(CheckAABB(ball.x,ball.y,ball.radius,ball.radius,paddle.x,paddle.y,paddle.w,paddle.h))
         {
             BallBounce(ball,paddle.x,paddle.y,paddle.w,paddle.h);
         }
 
-        if(ball.x < 0)
+        //walls
+        if(ball.x < wallLeft)
         {
-            ball.x = 0;
+            ball.x = wallLeft;
             ball.dx = -ball.dx;
         }
             
-        if(ball.x+ball.radius>canvas.width)
+        if(ball.x+ball.radius>wallRight)
         {
-            ball.x = canvas.width-ball.radius;
+            ball.x = wallRight-ball.radius;
             ball.dx = -ball.dx;
         }
             
-        if(ball.y < 0)
+        if(ball.y < wallTop)
         {
-            ball.y = 0;
+            ball.y = wallTop;
             ball.dy = -ball.dy;
         }
             
@@ -415,7 +411,26 @@ function CheckCollisions()
             i--;
         }
             
+    }
 
+    //Powerups
+    for(let i=0;i<powerupCount;i++)
+    {
+        let p = powerups[i];
+        p.y += powerupSpeed;
+
+        if(CheckAABB(p.x,p.y,p.w,p.h,paddle.x,paddle.y,paddle.w,paddle.h))
+        {
+            GetPowerup(p.type);
+            RemovePowerup(i);
+            i--; //if removed, need to go back one
+        }
+
+        if(p.y > canvas.height)
+        {
+            RemovePowerup(i);
+            i--;
+        }
     }
 }
 
@@ -454,14 +469,20 @@ function DrawBalls()
 
 function DrawHud()
 {
-    let y = 20;
+    let hudX = 352;
+    let hudY = 0;
+    let width = 128;
+    let height = canvas.height;
+    DrawRectangle(hudX,hudY,width,height,"#000000");
+
+    let y = hudY + 32;
     ctx.font = "16px Arial";
     ctx.fillStyle = "#0095DD";
-    ctx.fillText(`Score: ${gGame.score}`,10,y);
+    ctx.fillText(`Score: ${gGame.score}`,hudX+16,y);
     y+=30;
-    ctx.fillText(`Lives: ${gGame.lives}`,10,y);
+    ctx.fillText(`Lives: ${gGame.lives}`,hudX+16,y);
     y+=30;
-    ctx.fillText(`Level: ${gGame.curLevel+1}`,10,y);
+    ctx.fillText(`Level: ${gGame.curLevel+1}`,hudX+16,y);
 }
 
 function NewGame()
@@ -526,7 +547,7 @@ function DrawPowerups()
 function ResetLevel()
 {
     paddle.x = (canvas.width-30)/2;
-    paddle.y = canvas.height-15;
+    paddle.y = canvas.height-48;
 
     gGame.ballCount = 0;
     ballSpeedScale = 1;
@@ -627,11 +648,11 @@ function UpdatePlay()
     let speed = 10;
     if(inputStates.right)
     {
-        paddle.x = Math.min(paddle.x + speed,canvas.width-paddle.w);
+        paddle.x = Math.min(paddle.x + speed,wallRight-paddle.w);
     }
     else if(inputStates.left)
     {
-        paddle.x = Math.max(paddle.x - speed,0);
+        paddle.x = Math.max(paddle.x - speed,wallLeft);
     }
 
     //Powerup test
@@ -667,24 +688,7 @@ function UpdatePlay()
 
     }
 
-    for(let i=0;i<powerupCount;i++)
-    {
-        let p = powerups[i];
-        p.y += powerupSpeed;
-
-        if(CheckAABB(p.x,p.y,p.w,p.h,paddle.x,paddle.y,paddle.w,paddle.h))
-        {
-            GetPowerup(p.type);
-            RemovePowerup(i);
-            i--; //if removed, need to go back one
-        }
-
-        if(p.y > canvas.height)
-        {
-            RemovePowerup(i);
-            i--;
-        }
-    }
+    
 
     CheckCollisions();
 
@@ -703,7 +707,15 @@ function UpdatePlay()
 
 function DrawPlay()
 {
-    //RENDER
+    //play area
+    DrawRectangle(16,16,320,304,"#3239cc");
+    //walls
+    let wallColor = "#808080";
+    DrawRectangle(0,0,16,canvas.height,wallColor); //left
+    DrawRectangle(0,0,352,16,wallColor); //top
+    DrawRectangle(336,16,16,canvas.height,wallColor); //right
+
+    //stuff
     DrawPowerups();
     DrawBricks();
     DrawRectangle(paddle.x,paddle.y,paddle.w,paddle.h,"#FFFF00");

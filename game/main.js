@@ -211,6 +211,16 @@ levels[maxLevels++] = [
   
 ];
 
+const maxHighScores = 5;
+
+let scoreBoard = [
+    {name: "JIM",score: 2000},
+    {name: "GAB",score: 1900},
+    {name: "GAB",score: 1900},
+    {name: "GAB",score: 1900},
+    {name: "GAB",score: 1900},
+];
+
 let brickCount = 0;
 let bricks = [];
 
@@ -684,7 +694,6 @@ function UpdatePlay()
         inputStates.enter=false;
     }
    
-
     //UPDATE
     for(let i=0;i<gGame.ballCount;i++)
     {
@@ -709,8 +718,6 @@ function UpdatePlay()
         }
 
     }
-
-    
 
     CheckCollisions();
 
@@ -763,13 +770,13 @@ function UpdateGameOver()
         inputStates.enter = false;
     }
         
-
     //RENDER
-    DrawRectangle(0,0,canvas.width,canvas.height,"#ff0011");
+    DrawRectangle(0,0,canvas.width,canvas.height,"#9e575b");
 
     ctx.font = "16px Arial";
-    ctx.fillStyle = "#0095DD";
+    ctx.fillStyle = "#000000";
     ctx.fillText("GAME OVER",canvas.width/2-30,canvas.height/2);
+    ctx.fillText(`Your Score: ${gGame.score}`,canvas.width/2-30,canvas.height/2+20);
     
 }
 
@@ -783,7 +790,6 @@ function UpdateTitle()
         inputStates.enter = false;
     }
        
-
     //RENDER
     DrawRectangle(0,0,canvas.width,canvas.height,"#ffee22");
 
@@ -791,6 +797,11 @@ function UpdateTitle()
     ctx.fillStyle = "#0095DD";
     ctx.fillText("SILLY BALLS AND BRICKS",canvas.width/2-90,canvas.height/2);
     
+}
+
+function UpdateScoreBoard()
+{
+
 }
 
 function draw()
@@ -811,7 +822,7 @@ function draw()
     }
     else if(gGame.curGameState===GAME_STATE.SCORE_BOARD)
     {
-
+        UpdateScoreBoard();
     }
     
     requestAnimationFrame(draw);

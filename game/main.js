@@ -137,6 +137,12 @@ function GetRandomInt(min,max)
     return min + (Math.floor(Math.random()*(max-min)));
 }
 
+const logoImg = new Image();
+logoImg.src = "./game/assets/logo_small.png";
+let titleVelY = 0;
+//let titleY = 0;//-logoImg.height;
+
+
 let gGame = {
     curGameState: GAME_STATE.TITLE,
     curLevel: 0,
@@ -796,10 +802,10 @@ function UpdateTitle(dt)
        
     //RENDER
     DrawRectangle(0,0,canvas.width,canvas.height,"#ffee22");
-
-    ctx.font = "16px Arial";
-    ctx.fillStyle = "#0095DD";
-    ctx.fillText("SILLY BALLS AND BRICKS",canvas.width/2-90,canvas.height/2);
+    let titleX = canvas.width*0.5-logoImg.width*0.5;
+    let titleY = canvas.height*0.5-logoImg.height*0.5;
+    
+    ctx.drawImage(logoImg,titleX,titleY);
     
 }
 

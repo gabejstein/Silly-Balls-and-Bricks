@@ -23,12 +23,13 @@ document.addEventListener("keydown",OnKeyboardDown);
 document.addEventListener("keyup",OnKeyboardUp);
 document.addEventListener("mousemove",mouseMoveHandler);
 
+
 function mouseMoveHandler(e)
 {
     const relativeX = e.clientX - canvas.offsetLeft;
-    if(relativeX > 0 && relativeX < canvas.width)
+    if(relativeX > wallLeft && relativeX < wallRight)
     {
-        
+        paddle.x = Math.max(wallLeft, Math.min(wallRight-paddle.w,relativeX-paddle.w*0.5));
     }
 }
 
@@ -168,6 +169,7 @@ let scrollDisplay = {
     isActive: false
 };
 
+let gCurrentTime = 0;
 let timer = 0;
 let lastFrameTime = 0;
 
@@ -806,6 +808,14 @@ function UpdateTitle(dt)
     let titleY = canvas.height*0.5-logoImg.height*0.5;
     
     ctx.drawImage(logoImg,titleX,titleY);
+
+    if(Math.floor(gCurrentTime/200)%3===0)
+    {
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#000000";
+        ctx.fillText("Press Enter to Start",canvas.width/2-70,canvas.height*0.5+120);
+    }
+    
     
 }
 
@@ -816,6 +826,7 @@ function UpdateScoreBoard(dt)
 
 function draw(currentTime)
 {
+    gCurrentTime = currentTime;
     let deltaTime = (currentTime-lastFrameTime)/1000;
     deltaTime = Math.min(deltaTime,0.1);
     lastFrameTime=currentTime;

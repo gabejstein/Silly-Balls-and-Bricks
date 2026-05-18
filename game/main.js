@@ -163,6 +163,7 @@ let scrollDisplay = {
 };
 
 let timer = 0;
+let lastFrameTime = 0;
 
 let maxBrickCols = 10;
 let maxBrickRows = 4;
@@ -240,7 +241,7 @@ const POWERUP_TYPE = {
 
 Object.freeze(POWERUP_TYPE);
 
-const powerupSpeed = 4;
+const powerupSpeed = 240;
 let powerupCount = 0;
 let powerups = [];
 
@@ -449,7 +450,6 @@ function CheckCollisions()
     for(let i=0;i<powerupCount;i++)
     {
         let p = powerups[i];
-        p.y += powerupSpeed;
 
         if(CheckAABB(p.x,p.y,p.w,p.h,paddle.x,paddle.y,paddle.w,paddle.h))
         {
@@ -630,11 +630,11 @@ function SetScrollDisplay(text)
     scrollDisplay.isActive = true;
 }
 
-function UpdateScrollDisplay()
+function UpdateScrollDisplay(dt)
 {
     if(scrollDisplay.timer===0)
     {
-        scrollDisplay.yPos+=5;
+        scrollDisplay.yPos+=280*dt;
         if(scrollDisplay.phase===0 && scrollDisplay.yPos>canvas.height*0.5)
         {
             scrollDisplay.timer += 60;
@@ -656,7 +656,7 @@ function UpdateScrollDisplay()
     
 }
 
-function UpdatePlay()
+function UpdatePlay(dt)
 {
     if(timer>0)
     {
@@ -673,18 +673,18 @@ function UpdatePlay()
 
     if(scrollDisplay.isActive)
     {
-        UpdateScrollDisplay();
+        UpdateScrollDisplay(dt);
         return;
     }
     //INPUT
-    let speed = 10;
+    let speed = 340;
     if(inputStates.right)
     {
-        paddle.x = Math.min(paddle.x + speed,wallRight-paddle.w);
+        paddle.x = Math.min(paddle.x + speed*dt,wallRight-paddle.w);
     }
     else if(inputStates.left)
     {
-        paddle.x = Math.max(paddle.x - speed,wallLeft);
+        paddle.x = Math.max(paddle.x - speed*dt,wallLeft);
     }
 
     //Powerup test
@@ -694,7 +694,7 @@ function UpdatePlay()
         inputStates.enter=false;
     }
    
-    //UPDATE
+    //Update balls
     for(let i=0;i<gGame.ballCount;i++)
     {
         let b = balls[i];
@@ -706,19 +706,23 @@ function UpdatePlay()
             {
                 console.log("Ball launched!");
                 b.launched = true;
-                b.dx = -5;
-                b.dy = -2;
+                b.dx = -220;
+                b.dy = -190;
             }
             
         }
         else
         {
-            b.x += b.dx * ballSpeedScale;
-            b.y += b.dy * ballSpeedScale;
+            b.x += b.dx * dt * ballSpeedScale;
+            b.y += b.dy * dt * ballSpeedScale;
         }
 
     }
 
+    //Update Powerups
+    for(let i=0;i<powerupCount;i++)
+        powerups[i].y += powerupSpeed*dt;
+    
     CheckCollisions();
 
     if(gGame.destroyedBricks >= brickCount)
@@ -761,7 +765,7 @@ function DrawPlay()
     
 }
 
-function UpdateGameOver()
+function UpdateGameOver(dt)
 {
     //UPDATE
     if(inputStates.enter)
@@ -780,7 +784,7 @@ function UpdateGameOver()
     
 }
 
-function UpdateTitle()
+function UpdateTitle(dt)
 {
     //UPDATE
     if(inputStates.enter)
@@ -799,30 +803,34 @@ function UpdateTitle()
     
 }
 
-function UpdateScoreBoard()
+function UpdateScoreBoard(dt)
 {
 
 }
 
-function draw()
+function draw(currentTime)
 {
+    let deltaTime = (currentTime-lastFrameTime)/1000;
+    deltaTime = Math.min(deltaTime,0.1);
+    lastFrameTime=currentTime;
+
     ctx.clearRect(0,0,canvas.width,canvas.height);
     if(gGame.curGameState===GAME_STATE.TITLE)
     {
-        UpdateTitle();
+        UpdateTitle(deltaTime);
     }
     else if(gGame.curGameState===GAME_STATE.PLAY)
     {
-        UpdatePlay();
+        UpdatePlay(deltaTime);
         DrawPlay();
     }
     else if(gGame.curGameState===GAME_STATE.GAME_OVER)
     {
-        UpdateGameOver();
+        UpdateGameOver(deltaTime);
     }
     else if(gGame.curGameState===GAME_STATE.SCORE_BOARD)
     {
-        UpdateScoreBoard();
+        UpdateScoreBoard(deltaTime);
     }
     
     requestAnimationFrame(draw);

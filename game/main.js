@@ -5,7 +5,8 @@ const GAME_STATE = {
     TITLE: 0,
     PLAY: 1,
     GAME_OVER: 2,
-    SCORE_BOARD: 3
+    SCORE_BOARD: 3,
+    SCORE_ENTRY: 4,
 };
 
 Object.freeze(GAME_STATE); //makes immutable
@@ -79,13 +80,6 @@ function OnKeyboardUp(e)
         inputStates.space = false;
 }
 
-//Doesn't work because inputStates is not an array.
-// function ResetInputs()
-// {
-//     for(let i=0;i<inputStates.length;i++)
-//         inputStates[i] = false;
-// }
-
 //graphics functions
 function DrawRectangle(x,y,w,h,color)
 {
@@ -131,6 +125,11 @@ function DrawCircle(x,y,r,color)
 function CheckAABB(ax,ay,aw,ah,bx,by,bw,bh)
 {
     return (ax+aw > bx && ax < bx+bw && ay+ah>by && ay<by+bh);
+}
+
+function CheckPointInRect(x,y,x2,y2,w,h)
+{
+    return (x > x2 && x < x2+w && y > y2 && y <y2+h);
 }
 
 function GetRandomInt(min,max)
@@ -221,13 +220,16 @@ levels[maxLevels++] = [
 ];
 
 const maxHighScores = 5;
+const maxScoreName = 4;
+let newName = [65,65,65,65];
+let nameCurChar = 0;
 
 let scoreBoard = [
-    {name: "JIM",score: 2000},
-    {name: "GAB",score: 1900},
-    {name: "GAB",score: 1900},
-    {name: "GAB",score: 1900},
-    {name: "GAB",score: 1900},
+    {name: "JIM",score: 15000},
+    {name: "GAB",score: 6950},
+    {name: "LISA",score: 3910},
+    {name: "SAM",score: 1900},
+    {name: "SUE",score: 800},
 ];
 
 let brickCount = 0;
@@ -778,7 +780,11 @@ function UpdateGameOver(dt)
     //UPDATE
     if(inputStates.enter)
     {
-        gGame.curGameState = GAME_STATE.TITLE;
+         if(gGame.score>scoreBoard[maxHighScores-1].score)
+            gGame.curGameState = GAME_STATE.SCORE_ENTRY;
+        else
+            gGame.curGameState = GAME_STATE.TITLE;
+           
         inputStates.enter = false;
     }
         
@@ -819,9 +825,94 @@ function UpdateTitle(dt)
     
 }
 
+function SortHighScores()
+{
+    let i=0;
+    for(i=maxHighScores-1;i>0;i--)
+    {
+        let higher = scoreBoard[i-1];
+        if(scoreBoard[i].score > higher.score)
+        {
+            scoreBoard[i-1] = scoreBoard[i];
+            scoreBoard[i] = higher;
+        }
+        else
+            break;
+    }
+}
+
+function UpdateHighScoreEntry(dt)
+{
+    let sx = 100, sy=90;
+
+    if(inputStates.left)
+        nameCurChar = Math.max(0,nameCurChar-1);
+    else if(inputStates.right)
+        nameCurChar = Math.min(maxScoreName-1,nameCurChar+1);
+    else if(inputStates.up)
+        newName[nameCurChar]++;
+    else if(inputStates.down)
+        newName[nameCurChar]--;
+
+    inputStates.left = inputStates.right = inputStates.up = inputStates.down = false;
+
+    if(newName[nameCurChar]< 65)
+        newName[nameCurChar] = 90;
+
+    if(newName[nameCurChar] > 90)
+        newName[nameCurChar] = 65;
+
+    if(inputStates.enter)
+    {
+         scoreBoard[maxHighScores-1]={
+            name: String.fromCharCode(newName[0],newName[1],newName[2],newName[3]),
+            score: gGame.score
+        };
+        SortHighScores();
+        gGame.curGameState=GAME_STATE.SCORE_BOARD;
+        inputStates.enter = false;
+    }
+
+    //Rendering
+    ctx.font = "24px Arial";
+
+    ctx.fillStyle="#000000";
+    ctx.fillText("ENTER YOUR NAME: ",sx,sy);
+    sy+=30;
+    
+    for(let i=0;i<maxScoreName;i++)
+    {
+        if(i===nameCurChar)
+            ctx.fillStyle = "#3cff00";
+        else
+            ctx.fillStyle = "#000000";
+        ctx.fillText(String.fromCharCode(newName[i]),sx,sy);
+        sx +=30; 
+    }
+    
+}
+
 function UpdateScoreBoard(dt)
 {
+    if(inputStates.enter)
+    {
+        gGame.curGameState = GAME_STATE.TITLE;  
+        inputStates.enter = false;
+    }
 
+    DrawRectangle(0,0,canvas.width,canvas.height,"#ffc400");
+
+    let scoreX = 180, scoreY=100;
+    let padding = 20;
+    ctx.font = "16px Arial";
+    ctx.fillStyle = "#ffffff";
+    
+    for(let i=0;i<maxHighScores;i++)
+    {
+        let s = scoreBoard[i];
+        ctx.fillText(s.name+":\t"+s.score,scoreX,scoreY);
+        scoreY+=padding;
+    }
 }
 
 function draw(currentTime)
@@ -848,6 +939,10 @@ function draw(currentTime)
     else if(gGame.curGameState===GAME_STATE.SCORE_BOARD)
     {
         UpdateScoreBoard(deltaTime);
+    }
+    else if(gGame.curGameState===GAME_STATE.SCORE_ENTRY)
+    {
+        UpdateHighScoreEntry(deltaTime);
     }
     
     requestAnimationFrame(draw);

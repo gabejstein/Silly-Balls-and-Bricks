@@ -18,20 +18,31 @@ let inputStates = {
     right: false,
     enter: false,
     space: false,
+    mouseX: 0,
+    mouseClick: false
 }
 
 document.addEventListener("keydown",OnKeyboardDown);
 document.addEventListener("keyup",OnKeyboardUp);
 document.addEventListener("mousemove",mouseMoveHandler);
+document.addEventListener("mousedown",OnMouseDown);
+document.addEventListener("mouseup",OnMouseUp);
 
+function OnMouseDown(e)
+{
+    inputStates.mouseClick = true;
+}
+
+function OnMouseUp(e)
+{
+    inputStates.mouseClick = false;
+}
 
 function mouseMoveHandler(e)
 {
     const relativeX = e.clientX - canvas.offsetLeft;
-    if(relativeX > wallLeft && relativeX < wallRight)
-    {
-        paddle.x = Math.max(wallLeft, Math.min(wallRight-paddle.w,relativeX-paddle.w*0.5));
-    }
+    inputStates.mouseX = relativeX;
+    
 }
 
 function OnKeyboardDown(e)
@@ -617,6 +628,7 @@ function StartLevel()
 function ToNextLevel()
 {
     gGame.curLevel = (gGame.curLevel+1)%maxLevels;
+    gGame.score +=500;
     StartLevel();
 }
 
@@ -697,6 +709,12 @@ function UpdatePlay(dt)
         paddle.x = Math.max(paddle.x - speed*dt,wallLeft);
     }
 
+    if(inputStates.mouseX > wallLeft && inputStates.mouseX < wallRight)
+    {
+        
+        paddle.x = Math.max(wallLeft, Math.min(wallRight-paddle.w,inputStates.mouseX-paddle.w*0.5));
+    }
+
     //Powerup test
     if(inputStates.enter)
     {
@@ -712,7 +730,7 @@ function UpdatePlay(dt)
         {
             b.x = paddle.x+10;
             b.y = paddle.y-b.radius;
-            if(inputStates.space)
+            if(inputStates.space || inputStates.mouseClick)
             {
                 console.log("Ball launched!");
                 b.launched = true;
@@ -778,12 +796,12 @@ function DrawPlay()
 function UpdateGameOver(dt)
 {
     //UPDATE
-    if(inputStates.enter)
+    if(inputStates.enter || inputStates.mouseClick)
     {
          if(gGame.score>scoreBoard[maxHighScores-1].score)
             gGame.curGameState = GAME_STATE.SCORE_ENTRY;
         else
-            gGame.curGameState = GAME_STATE.TITLE;
+            gGame.curGameState = GAME_STATE.SCORE_BOARD;
            
         inputStates.enter = false;
     }
@@ -801,11 +819,11 @@ function UpdateGameOver(dt)
 function UpdateTitle(dt)
 {
     //UPDATE
-    if(inputStates.enter)
+    if(inputStates.enter || inputStates.mouseClick)
     {
         NewGame();
         gGame.curGameState = GAME_STATE.PLAY;
-        inputStates.enter = false;
+        inputStates.enter = inputStates.mouseClick = false;
     }
        
     //RENDER
@@ -894,10 +912,10 @@ function UpdateHighScoreEntry(dt)
 
 function UpdateScoreBoard(dt)
 {
-    if(inputStates.enter)
+    if(inputStates.enter || inputStates.mouseClick)
     {
         gGame.curGameState = GAME_STATE.TITLE;  
-        inputStates.enter = false;
+        inputStates.enter = inputStates.mouseClick = false;
     }
 
     DrawRectangle(0,0,canvas.width,canvas.height,"#ffc400");

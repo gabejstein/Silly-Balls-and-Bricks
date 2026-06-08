@@ -1,12 +1,19 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
+const fullScreenBtn = document.getElementById("fullscreenBtn");
+
+fullScreenBtn.addEventListener("click",()=>{
+    canvas.requestFullscreen();
+});
+
 const GAME_STATE = {
     TITLE: 0,
     PLAY: 1,
     GAME_OVER: 2,
     SCORE_BOARD: 3,
     SCORE_ENTRY: 4,
+    LOADING: 5,
 };
 
 Object.freeze(GAME_STATE); //makes immutable
@@ -91,65 +98,6 @@ function OnKeyboardUp(e)
         inputStates.space = false;
 }
 
-//graphics functions
-function DrawRectangle(x,y,w,h,color)
-{
-    ctx.beginPath();
-    ctx.rect(x,y,w,h);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.closePath();
-    
-}
-
-function DrawLineRectangle(x,y,w,h,color,lineWidth)
-{
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineWidth;
-    ctx.rect(x,y,w,h);
-    ctx.stroke();
-    ctx.closePath();
-}
-
-function DrawLine(x1,y1,x2,y2,lineSize,color)
-{
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineSize;
-    ctx.moveTo(x1,y1);
-    ctx.lineTo(x2,y2);
-    ctx.stroke();
-    ctx.closePath();
-}
-
-function DrawCircle(x,y,r,color)
-{
-    ctx.beginPath();
-    ctx.arc(x,y,r,0,Math.Pi*2);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.closePath();
-}
-
-//Collision Detection
-function CheckAABB(ax,ay,aw,ah,bx,by,bw,bh)
-{
-    return (ax+aw > bx && ax < bx+bw && ay+ah>by && ay<by+bh);
-}
-
-function CheckPointInRect(x,y,x2,y2,w,h)
-{
-    return (x > x2 && x < x2+w && y > y2 && y <y2+h);
-}
-
-function GetRandomInt(min,max)
-{
-    return min + (Math.floor(Math.random()*(max-min)));
-}
-
-const logoImg = new Image();
-logoImg.src = "./game/assets/logo_small.png";
 let titleVelY = 0;
 //let titleY = 0;//-logoImg.height;
 
@@ -192,43 +140,6 @@ const screenOffsetX = 16;
 const screenOffsetY = 16;
 
 const NEXT_BONUS_LIFE = 500;
-
-let maxLevels = 0;
-const levels = []
-
-//level 1
-levels[maxLevels++] = [
-    0,0,0,0,0,0,0,0,0,0,
-    0,0,1,1,1,1,1,1,0,0,
-    0,0,1,1,1,1,1,1,0,0,
-    0,0,0,0,0,0,0,0,0,0,
-  
-];
-
-levels[maxLevels++] = [
-    0,0,2,2,2,2,2,2,0,0,
-    0,0,1,1,1,1,1,1,0,0,
-    0,0,1,1,3,3,1,1,0,0,
-    0,0,0,0,0,0,0,0,0,0,
-  
-];
-
-//level 2
-levels[maxLevels++] = [
-    0,1,2,1,2,1,2,1,2,0,
-    0,2,1,2,1,2,1,2,1,0,
-    0,1,2,1,2,1,2,1,2,0,
-    0,0,0,0,0,0,1,0,0,0,
-  
-];
-
-levels[maxLevels++] = [
-    0,2,1,0,0,0,0,1,2,0,
-    0,2,1,0,0,0,0,1,2,0,
-    0,2,1,0,0,0,0,1,2,0,
-    0,0,0,0,0,0,0,0,0,0,
-  
-];
 
 const maxHighScores = 5;
 const maxScoreName = 4;
@@ -825,6 +736,8 @@ function UpdateTitle(dt)
         gGame.curGameState = GAME_STATE.PLAY;
         inputStates.enter = inputStates.mouseClick = false;
     }
+
+    let logoImg = images.title;
        
     //RENDER
     DrawRectangle(0,0,canvas.width,canvas.height,"#ffee22");
@@ -933,6 +846,18 @@ function UpdateScoreBoard(dt)
     }
 }
 
+function UpdateLoading(dt)
+{
+    if(imagesReady===true)
+        gGame.curGameState=GAME_STATE.TITLE;
+
+    DrawRectangle(0,0,canvas.width,canvas.height,"#ffee22");
+
+    ctx.font = "16px Arial";
+    ctx.fillStyle = "#000000";
+    ctx.fillText("Loading...",canvas.width/2-70,canvas.height*0.5+120);
+}
+
 function draw(currentTime)
 {
     gCurrentTime = currentTime;
@@ -962,9 +887,15 @@ function draw(currentTime)
     {
         UpdateHighScoreEntry(deltaTime);
     }
+    else if(gGame.curGameState===GAME_STATE.LOADING)
+    {
+        UpdateLoading(deltaTime);
+    }
     
     requestAnimationFrame(draw);
 
 }
 
+gGame.curGameState=GAME_STATE.LOADING;
+LoadResources();
 draw();

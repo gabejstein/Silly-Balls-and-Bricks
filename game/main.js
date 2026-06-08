@@ -99,7 +99,6 @@ function OnKeyboardUp(e)
 }
 
 let titleVelY = 0;
-let titleX = 0;
 let titleY = 0;
 
 let gGame = {
@@ -732,15 +731,16 @@ function InitTitle()
     gGame.curGameState=GAME_STATE.TITLE;
 
     //set title graphic start
-    titleX = canvas.width*0.5-images.title.width*0.5;
-    titleY = -images.title.height;
-    titleVelY = 130.0;
+    titleY = 0;
+    titleVelY = 200;
+    timer = 4;
 }
 
 function UpdateTitle(dt)
 {
+    timer = Math.max(0,timer-dt);
     //UPDATE
-    if(inputStates.enter || inputStates.mouseClick)
+    if(timer <= 0 && (inputStates.enter || inputStates.mouseClick))
     {
         NewGame();
         gGame.curGameState = GAME_STATE.PLAY;
@@ -748,19 +748,26 @@ function UpdateTitle(dt)
     }
 
     let logoImg = images.title;
+   
+    let gravity = 400.0;
+    titleVelY += gravity * dt;
     titleY += titleVelY*dt;
-    if(titleY >= canvas.height*0.5-logoImg.height*0.5)
+    if(titleY >= 200)
     {
-        titleY = canvas.height*0.5-logoImg.height*0.5;
-        titleVelY=0;
+        titleY = 200;
+        titleVelY += -titleVelY*1.63;
     }
+
+    let titleScale = Math.max(0.08,titleY/200);
        
     //RENDER
     DrawRectangle(0,0,canvas.width,canvas.height,"#ffee22");
     
-    ctx.drawImage(logoImg,titleX,titleY);
+    let x = canvas.width*0.5-(logoImg.width*titleScale)*0.5;
+    let y = canvas.height*0.5-(logoImg.height*titleScale)*0.5;
+    ctx.drawImage(logoImg, x, y,logoImg.width*titleScale,logoImg.height*titleScale);
 
-    if(Math.floor(gCurrentTime/200)%3===0)
+    if(timer<=0 && Math.floor(gCurrentTime/200)%3===0)
     {
         ctx.font = "16px Arial";
         ctx.fillStyle = "#000000";

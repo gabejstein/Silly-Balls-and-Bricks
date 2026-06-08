@@ -16,10 +16,12 @@ function OnImageLoad()
 
 function LoadResources()
 {
+    imagesReady = false;
+
     for(let key in imagePaths)
     {
         const img = new Image();
-        img.onload = OnImageLoad();
+        img.onload = OnImageLoad;
         img.src = imagePaths[key];
         images[key] = img;
     }

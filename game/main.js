@@ -99,8 +99,8 @@ function OnKeyboardUp(e)
 }
 
 let titleVelY = 0;
-//let titleY = 0;//-logoImg.height;
-
+let titleX = 0;
+let titleY = 0;
 
 let gGame = {
     curGameState: GAME_STATE.TITLE,
@@ -727,6 +727,16 @@ function UpdateGameOver(dt)
     
 }
 
+function InitTitle()
+{
+    gGame.curGameState=GAME_STATE.TITLE;
+
+    //set title graphic start
+    titleX = canvas.width*0.5-images.title.width*0.5;
+    titleY = -images.title.height;
+    titleVelY = 130.0;
+}
+
 function UpdateTitle(dt)
 {
     //UPDATE
@@ -738,11 +748,15 @@ function UpdateTitle(dt)
     }
 
     let logoImg = images.title;
+    titleY += titleVelY*dt;
+    if(titleY >= canvas.height*0.5-logoImg.height*0.5)
+    {
+        titleY = canvas.height*0.5-logoImg.height*0.5;
+        titleVelY=0;
+    }
        
     //RENDER
     DrawRectangle(0,0,canvas.width,canvas.height,"#ffee22");
-    let titleX = canvas.width*0.5-logoImg.width*0.5;
-    let titleY = canvas.height*0.5-logoImg.height*0.5;
     
     ctx.drawImage(logoImg,titleX,titleY);
 
@@ -849,7 +863,7 @@ function UpdateScoreBoard(dt)
 function UpdateLoading(dt)
 {
     if(imagesReady===true)
-        gGame.curGameState=GAME_STATE.TITLE;
+        InitTitle();
 
     DrawRectangle(0,0,canvas.width,canvas.height,"#ffee22");
 
@@ -857,6 +871,8 @@ function UpdateLoading(dt)
     ctx.fillStyle = "#000000";
     ctx.fillText("Loading...",canvas.width/2-70,canvas.height*0.5+120);
 }
+
+
 
 function draw(currentTime)
 {

@@ -54,7 +54,7 @@ function mouseMoveHandler(e)
 
 function OnKeyboardDown(e)
 {
-    e.preventDefault();
+    //e.preventDefault();
 
    if(e.key==="Up" || e.key=="ArrowUp")
     inputStates.up = true;
@@ -81,7 +81,7 @@ function OnKeyboardDown(e)
 
 function OnKeyboardUp(e)
 {
-    e.preventDefault();
+    //e.preventDefault();
 
     if(e.key==="Up"  || e.key=="ArrowUp")
        inputStates.up = false;

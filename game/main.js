@@ -29,11 +29,20 @@ let inputStates = {
     mouseClick: false
 }
 
+const touchStates = {
+    x : 0,
+    y : 0,
+    isDown : false
+};
+
 document.addEventListener("keydown",OnKeyboardDown);
 document.addEventListener("keyup",OnKeyboardUp);
 canvas.addEventListener("mousemove",mouseMoveHandler);
 canvas.addEventListener("mousedown",OnMouseDown);
 canvas.addEventListener("mouseup",OnMouseUp);
+canvas.addEventListener("touchstart",OnTouchStart);
+canvas.addEventListener("touchend",OnTouchEnd);
+canvas.addEventListener("touchmove",OnTouchMove);
 
 function OnMouseDown(e)
 {
@@ -105,11 +114,32 @@ function OnKeyboardUp(e)
 function OnTouchStart(e)
 {
     e.preventDefault();
+
+    for(const changedTouch of e.changedTouches)
+    {
+        touchStates.x = changedTouch.pageX- canvas.offsetLeft;
+        touchStates.y = changedTouch.pageY- canvas.offsetLeft;
+        touchStates.isDown = true;
+    }
 }
 
 function OnTouchEnd(e)
 {
     e.preventDefault();
+
+    //touchStates.isDown = true;
+}
+
+function OnTouchMove(e)
+{
+    e.preventDefault();
+
+    for(const changedTouch of e.changedTouches)
+    {
+        touchStates.x = changedTouch.pageX- canvas.offsetLeft;
+        touchStates.y = changedTouch.pageY- canvas.offsetLeft;
+        touchStates.isDown = true;
+    }
 }
 
 let titleVelY = 0;
@@ -638,6 +668,19 @@ function UpdatePlay(dt)
         
         paddle.x = Math.max(wallLeft, Math.min(wallRight-paddle.w,inputStates.mouseX-paddle.w*0.5));
     }
+
+   
+    if(touchStates.isDown)
+    {
+        console.log(touchStates.x);
+        console.log(touchStates.y);
+        if(touchStates.x > wallLeft && touchStates.x < wallRight)
+        {
+            paddle.x = Math.max(wallLeft, Math.min(wallRight-paddle.w,touchStates.x-paddle.w*0.5));
+        }
+    }
+    
+   
 
     //Powerup test
     if(inputStates.enter)

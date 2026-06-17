@@ -31,9 +31,9 @@ let inputStates = {
 
 document.addEventListener("keydown",OnKeyboardDown);
 document.addEventListener("keyup",OnKeyboardUp);
-document.addEventListener("mousemove",mouseMoveHandler);
-document.addEventListener("mousedown",OnMouseDown);
-document.addEventListener("mouseup",OnMouseUp);
+canvas.addEventListener("mousemove",mouseMoveHandler);
+canvas.addEventListener("mousedown",OnMouseDown);
+canvas.addEventListener("mouseup",OnMouseUp);
 
 function OnMouseDown(e)
 {
@@ -100,6 +100,16 @@ function OnKeyboardUp(e)
 
     if(e.key==" ")
         inputStates.space = false;
+}
+
+function OnTouchStart(e)
+{
+    e.preventDefault();
+}
+
+function OnTouchEnd(e)
+{
+    e.preventDefault();
 }
 
 let titleVelY = 0;

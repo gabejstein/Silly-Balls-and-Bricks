@@ -54,6 +54,8 @@ function mouseMoveHandler(e)
 
 function OnKeyboardDown(e)
 {
+    e.preventDefault();
+
    if(e.key==="Up" || e.key=="ArrowUp")
     inputStates.up = true;
 
@@ -79,6 +81,8 @@ function OnKeyboardDown(e)
 
 function OnKeyboardUp(e)
 {
+    e.preventDefault();
+
     if(e.key==="Up"  || e.key=="ArrowUp")
        inputStates.up = false;
 
@@ -848,7 +852,7 @@ function UpdateScoreBoard(dt)
 {
     if(inputStates.enter || inputStates.mouseClick)
     {
-        gGame.curGameState = GAME_STATE.TITLE;  
+        InitTitle();  
         inputStates.enter = inputStates.mouseClick = false;
     }
 

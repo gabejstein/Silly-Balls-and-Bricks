@@ -679,8 +679,6 @@ function UpdatePlay(dt)
         }
     }
     
-   
-
     //Powerup test
     if(inputStates.enter)
     {
@@ -696,7 +694,7 @@ function UpdatePlay(dt)
         {
             b.x = paddle.x+10;
             b.y = paddle.y-b.radius;
-            if(inputStates.space || inputStates.mouseClick)
+            if(inputStates.space || inputStates.mouseClick || touchStates.isDown)
             {
                 console.log("Ball launched!");
                 b.launched = true;
@@ -800,7 +798,7 @@ function UpdateTitle(dt)
     {
         NewGame();
         gGame.curGameState = GAME_STATE.PLAY;
-        inputStates.enter = inputStates.mouseClick = false;
+        inputStates.enter = inputStates.mouseClick = touchStates.isDown = false;
     }
 
     let logoImg = images.title;

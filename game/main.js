@@ -127,7 +127,7 @@ function OnTouchEnd(e)
 {
     e.preventDefault();
 
-    //touchStates.isDown = true;
+    touchStates.isDown = false;
 }
 
 function OnTouchMove(e)
@@ -138,7 +138,6 @@ function OnTouchMove(e)
     {
         touchStates.x = changedTouch.pageX- canvas.offsetLeft;
         touchStates.y = changedTouch.pageY- canvas.offsetLeft;
-        touchStates.isDown = true;
     }
 }
 
@@ -797,7 +796,7 @@ function UpdateTitle(dt)
 {
     timer = Math.max(0,timer-dt);
     //UPDATE
-    if(timer <= 0 && (inputStates.enter || inputStates.mouseClick))
+    if(timer <= 0 && (inputStates.enter || inputStates.mouseClick || touchStates.isDown))
     {
         NewGame();
         gGame.curGameState = GAME_STATE.PLAY;
